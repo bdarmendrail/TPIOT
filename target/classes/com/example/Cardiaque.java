@@ -1,17 +1,17 @@
-public class Cardiaque {
+public class Cardiaque extends Capteur {
     
     private double frequenceCardiaque;
 
     public Cardiaque( double frequenceCardiaque) {
-       
-        this.frequenceCardiaque = frequenceCardiaque;
+       this.setValue(frequenceCardiaque)
+       //this.frequenceCardiaque = frequenceCardiaque;
     }
 
     public double getFrequenceCardiaque() {
-        return frequenceCardiaque;
+        return this.value;
     }
 
     public void setFrequenceCardiaque(double frequenceCardiaque) {
-        this.frequenceCardiaque = frequenceCardiaque;
+        this.setValue(frequenceCardiaque);
     }
 }

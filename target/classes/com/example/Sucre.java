@@ -1,10 +1,10 @@
-public class Sucre {
+public class Sucre extends Capteur{
     
     private double Sucre;
 
     public Sucre( double Sucre) {
-       
-        this.Sucre = Sucre;
+        this.setValue(Sucre);
+        //this.Sucre = Sucre;
     }
 
     public double getSucre() {
@@ -12,6 +12,7 @@ public class Sucre {
     }
 
     public void setSucre(double Sucre) {
-        this.Sucre = Sucre;
+        this.setValue(Sucre);
+        //this.Sucre = Sucre;
     }
 }
