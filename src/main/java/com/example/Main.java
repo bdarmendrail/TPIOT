@@ -2,6 +2,8 @@ package com.example;
 import java.util;
 import java.util.Scanner;
 
+private static final String EXCHANGE_NAME = "mesure";
+
 public class Main {
     public static void main(String[] args) {
         switch(choix){
@@ -9,7 +11,18 @@ public class Main {
                 //Activation du patient
                 Scanner scP = new Scanner(System.in);
                 for(int i = 0;i<count(lesPatients);i++){
-                    print(st)
+                    print(i+1 + " - "+lesPatients.get(i).getNom() + " " + lesPatients[i].getPrenom());    
+                }
+                int choice = scP.next();
+                Patient pt = lesPatients.get(choice-1);
+                ConnectionFactory factory = new ConnectionFactory();
+                factory.setHost("localhost");
+                try (Connection connection = factory.newConnection();
+                    Channel channel = connection.createChannel()) {
+                    channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
+
+                    channel.basicPublish(EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
+                    System.out.println(" [x] Sent '" + message + "'");
                 }
         }
     }
