@@ -1,22 +1,10 @@
-package com.example;
-public class Oxymetre {
+public class Oxymetre extends Capteur {
     
-    private String nom;
-    private int age;
     private double saturationOxygene;
 
-    public Oxymetre(String nom, int age, double saturationOxygene) {
-        this.nom = nom;
-        this.age = age;
-        this.saturationOxygene = saturationOxygene;
-    }
-
-    public String getNom() {
-        return nom;
-    }
-
-    public int getAge() {
-        return age;
+    public Oxymetre( double saturationOxygene) {
+        this.setValue(saturationOxygene);
+        //this.saturationOxygene = saturationOxygene;
     }
 
     public double getSaturationOxygene() {
@@ -24,6 +12,7 @@ public class Oxymetre {
     }
 
     public void setSaturationOxygene(double saturationOxygene) {
-        this.saturationOxygene = saturationOxygene;
+        this.setValue(saturationOxygene);
+        //this.saturationOxygene = saturationOxygene;
     }
 }

@@ -6,6 +6,9 @@ private static final String EXCHANGE_NAME = "mesure";
 
 public class Main {
     public static void main(String[] args) {
+        Gson gson = new Gson();
+        Scanner scM = new Scanner(System.in);
+        int choix = scM.nextInt();
         switch(choix){
             case 1:
                 //Activation du patient
@@ -23,7 +26,7 @@ public class Main {
                 mesure_pt.addCapteur(sucre);
                 mesure_pt.addCapteur(cardiaque);
                 mesure_pt.addCapteur(oxymetre);
-                String message = mesure_pt.toJson();
+                String message = gson.toJson(mesure_pt);
 
                 ConnectionFactory factory = new ConnectionFactory();
                 factory.setHost("localhost");

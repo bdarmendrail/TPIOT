@@ -1,29 +1,18 @@
-package com.example;
-public class Sucre {
+public class Sucre extends Capteur{
     
-    private String nom;
-    private int age;
-    private double sucre;
+    private double Sucre;
 
-    public Sucre(String nom, int age, double sucre) {
-        this.nom = nom;
-        this.age = age;
-        this.sucre = sucre;
-    }
-
-    public String getNom() {
-        return nom;
-    }
-
-    public int getAge() {
-        return age;
+    public Sucre( double Sucre) {
+        this.setValue(Sucre);
+        //this.Sucre = Sucre;
     }
 
     public double getSucre() {
-        return sucre;
+        return Sucre;
     }
 
-    public void setSucre(double sucre) {
-        this.sucre = sucre;
+    public void setSucre(double Sucre) {
+        this.setValue(Sucre);
+        //this.Sucre = Sucre;
     }
 }
