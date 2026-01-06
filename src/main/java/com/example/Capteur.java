@@ -25,32 +25,32 @@ public class Capteur{
         switch (this.getTypeCapteur()) {
             case "Sucre":
                 if (this.getValue() < 0.70) {
-                    laChaine =  "Hypoglycémie détectée : " + this.getValue() + " g/L";
+                    laChaine =  "⚠️   Hypoglycémie détectée : " + this.getValue() + " g/L";
                 } else if (this.getValue() > 1.30) {
-                    laChaine = "Hyperglycémie détectée : " + this.getValue() + " g/L";
+                    laChaine = "⚠️   Hyperglycémie détectée : " + this.getValue() + " g/L";
                 } else {
-                    laChaine = "RAS : " + this.getValue() + " g/L";
+                    laChaine = "✅   RAS : : " + this.getValue() + " g/L";
                 }
                 break;
             case "Cardiaque":
                 if(this.getValue() < 50){
                     laChaine = "Rythme cardiaque basse détectée : " + this.getValue() + " bpm";
                 }else if(this.getValue() > 180){
-                    laChaine = "Rythme cardiaque élevé détecté : " + this.getValue() + " bpm";
+                    laChaine = "⚠️   Rythme cardiaque élevé détecté : " + this.getValue() + " bpm";
                 }else{
-                    laChaine = "RAS : " + this.getValue() + " bpm";
+                    laChaine = "✅   RAS : : " + this.getValue() + " bpm";
                 }
                 break;
             case "Oxymetre":
                 if(this.getValue() < 90){
-                    laChaine = "Hypoxémie détectée : " + this.getValue() + " %";
+                    laChaine = "⚠️   Hypoxémie détectée : " + this.getValue() + " %";
                 } else {
-                    laChaine = "RAS : " + this.getValue() + " %";
+                    laChaine = "✅   RAS : " + this.getValue() + " %";
                 }
                 break;
         }
 
-        return laChaine;
+        return laChaine; 
     }
 
 

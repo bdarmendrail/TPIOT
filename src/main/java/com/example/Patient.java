@@ -1,9 +1,12 @@
 package com.example;
 import java.util.UUID;
+
+import com.fasterxml.jackson.databind.annotation.JsonAppend.Attr;
 public class Patient{
     public UUID uuid;
     public String nom;
     public String prenom;
+    public AttributePatient attribut;
 
     public Patient(){
         this.uuid = UUID.randomUUID();
@@ -26,5 +29,12 @@ public class Patient{
     }
     public void setUuid(UUID uuid){
         this.uuid = uuid;
+    }
+
+    public AttributePatient getAttribut(){
+        return this.attribut;
+    }
+    public void setAttribut(AttributePatient attribut){
+        this.attribut = attribut;
     }
 }
