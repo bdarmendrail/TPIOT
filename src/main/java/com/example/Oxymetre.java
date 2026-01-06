@@ -1,14 +1,17 @@
+package com.example;
 public class Oxymetre extends Capteur {
     
     private double saturationOxygene;
 
-    public Oxymetre( double saturationOxygene) {
+    public Oxymetre(Patient pt,double saturationOxygene) {
+        super(pt);
         this.setValue(saturationOxygene);
+        this.setTypeCapteur("Oxymetre");
         //this.saturationOxygene = saturationOxygene;
     }
 
     public double getSaturationOxygene() {
-        return saturationOxygene;
+        return this.getValue();
     }
 
     public void setSaturationOxygene(double saturationOxygene) {

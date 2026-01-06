@@ -1,14 +1,17 @@
+package com.example;
 public class Cardiaque extends Capteur {
     
     private double frequenceCardiaque;
 
-    public Cardiaque( double frequenceCardiaque) {
-       this.setValue(frequenceCardiaque)
+    public Cardiaque(Patient pt,double frequenceCardiaque) {
+        super(pt);
+       this.setValue(frequenceCardiaque);
+       this.setTypeCapteur("Cardiaque");
        //this.frequenceCardiaque = frequenceCardiaque;
     }
 
     public double getFrequenceCardiaque() {
-        return this.value;
+        return this.getValue();
     }
 
     public void setFrequenceCardiaque(double frequenceCardiaque) {
