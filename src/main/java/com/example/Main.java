@@ -398,8 +398,17 @@ public class Main {
                     String newPrenom = sc.nextLine();
 
                     System.out.println("Nouvel attribut :");
-                    for (int i = 0; i < lesAttributs.size(); i++) {
-                        System.out.println((i + 1) + " - " + lesAttributs.get(i).getNomAttribut());
+                    while(true){
+                        for (int i = 0; i < lesAttributs.size(); i++) {
+                            System.out.println((i + 1) + " - " + lesAttributs.get(i).getNomAttribut());
+                        }
+                        int choixAttrTemp = sc.nextInt();
+                        sc.nextLine();
+                        if(choixAttrTemp < 1 || choixAttrTemp > lesAttributs.size()){
+                            System.out.println("Choix invalide, veuillez réessayer.");
+                        }else{
+                            break;
+                        }
                     }
                     int choixAttr = sc.nextInt();
                     sc.nextLine();
