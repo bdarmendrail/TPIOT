@@ -176,6 +176,14 @@ public class Main {
                                             System.out.println("Réponse du webhook: " + response.toString());
                                         }
                                     } catch (Exception e) {
+                                        lesWebhooks.remove(wh);
+                                        System.out.println("Erreur lors de l'envoi au webhook. Le webhook (" + wh.getUrl() + ") n'est pas un endpoint valide. Il ne recevra désormais plus de données.");
+                                        try(Writer writer = new FileWriter("Webhooks.json")) {
+                                            Gson gsonWriterFile = new GsonBuilder().create();
+                                            gsonWriterFile.toJson(lesWebhooks, writer);
+                                        } catch (IOException e2) {
+                                            e2.printStackTrace();
+                                        }
                                         e.printStackTrace();
                                     }
                                 }
@@ -388,7 +396,7 @@ public class Main {
                     Scanner scW = new Scanner(System.in);
                     for(int i = 0;i<lesWebhooks.size();i++){
                         Webhook wh = lesWebhooks.get(i);
-                        String patientInfo = wh.isAllPatients() ? "Tous les patients" : wh.patient.getNom() + " " + wh.patient.getPrenom();
+                        String patientInfo = wh.isAllPatients() ? "Tous les patients" : wh.getPatient().getNom() + " " + wh.getPatient().getPrenom();
                         System.out.println((i+1) + " - URL: " + wh.getUrl() + " | Patient: " + patientInfo);
                     }
                     System.out.println("Entrer le numéro du webhook à supprimer : ");
