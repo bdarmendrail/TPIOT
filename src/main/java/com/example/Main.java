@@ -442,7 +442,6 @@ public class Main {
                 int choixAttr = sc.nextInt();
                 sc.nextLine();
 
-                // Recherche chambre actuelle
                 Chambre chambreActuelle = null;
                 for (Chambre c : lesChambres) {
                     if (c.getPatientList().contains(ptmodif)) {
@@ -451,7 +450,6 @@ public class Main {
                     }
                 }
 
-                // Liste des chambres disponibles
                 List<Chambre> chambresDispo = new ArrayList<>();
                 System.out.println("Choisissez une chambre :");
 
@@ -471,8 +469,6 @@ public class Main {
                 sc.nextLine();
 
                 Chambre nouvelleChambre = chambresDispo.get(choixChambre - 1);
-
-                // Déplacement patient
                 if (chambreActuelle != null && chambreActuelle != nouvelleChambre) {
                     chambreActuelle.getPatientList().remove(ptmodif);
                 }
@@ -480,12 +476,10 @@ public class Main {
                     nouvelleChambre.getPatientList().add(ptmodif);
                 }
 
-                // Mise à jour patient
                 ptmodif.setNom(newNom);
                 ptmodif.setPrenom(newPrenom);
                 ptmodif.setAttribut(lesAttributs.get(choixAttr - 1));
 
-                // Sauvegardes
                 try (Writer w1 = new FileWriter("Patients.json");
                         Writer w2 = new FileWriter("Chambres.json")) {
 
@@ -538,7 +532,6 @@ public class Main {
                 break;
             case 7:
                 System.out.println("Option 7 sélectionnée : Définir un webhook pour un patient");
-                // Définir un webhook pour un patient
                 if (lesPatients.size() == 0) {
                     System.out.println("Aucun patient enregistré. Veuillez en ajouter un d'abord.");
                     break;
@@ -566,7 +559,6 @@ public class Main {
                 break;
             case 8:
                 System.out.println("Option 8 sélectionnée : Définir un webhook pour tous les données médicales");
-                // Définir un webhook pour toutes les données médicales
                 Scanner scannerWAll = new Scanner(System.in);
                 System.out.println("Entrer l'URL du webhook : ");
                 String urlWAll = scannerWAll.nextLine();
@@ -632,12 +624,9 @@ public class Main {
 
                     channelA.exchangeDeclare(EXCHANGE_NAME_ALERT, "fanout");
 
-                    // Queue persistante pour l'historique
                     String historiqueQueue = "historique_alertes";
                     channelA.queueDeclare(historiqueQueue, true, false, false, null);
                     channelA.queueBind(historiqueQueue, EXCHANGE_NAME_ALERT, "");
-
-                    // Publier le message sur l'exchange (pour live)
                     channelA.basicPublish(EXCHANGE_NAME_ALERT, "", null, messageAlerte.getBytes("UTF-8"));
 
                     System.out.println(
