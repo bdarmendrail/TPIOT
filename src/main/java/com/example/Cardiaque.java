@@ -1,7 +1,6 @@
 package com.example;
 public class Cardiaque extends Capteur {
     
-    private double frequenceCardiaque;
 
     public Cardiaque(Patient pt,double frequenceCardiaque) {
         super(pt);

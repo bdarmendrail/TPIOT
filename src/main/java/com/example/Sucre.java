@@ -1,7 +1,6 @@
 package com.example;
 public class Sucre extends Capteur{
     
-    private double Sucre;
 
     public Sucre(Patient pt,double Sucre) {
         super(pt);

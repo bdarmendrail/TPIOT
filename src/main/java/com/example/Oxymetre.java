@@ -1,7 +1,6 @@
 package com.example;
 public class Oxymetre extends Capteur {
     
-    private double saturationOxygene;
 
     public Oxymetre(Patient pt,double saturationOxygene) {
         super(pt);
