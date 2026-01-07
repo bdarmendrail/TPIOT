@@ -19,6 +19,8 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
+import com.rabbitmq.client.GetResponse;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
@@ -178,7 +180,7 @@ public class Main {
                                 null,
                                 message.getBytes("UTF-8"));
 
-                        //System.out.println("Envoi de : '" + message + "'");
+                        // System.out.println("Envoi de : '" + message + "'");
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -206,18 +208,22 @@ public class Main {
                 }
             case 2:
                 System.out.println("Option 2 sélectionnée : Visualisation des données de santé");
-                // Récupération et affichage des données de santé
-                if (lesPatients.size() == 0) {
-                    System.out.println("Aucun patient enregistré. Veuillez en ajouter un d'abord.");
+
+                if (lesPatients.isEmpty()) {
+                    System.out.println("Aucun patient enregistré.");
                     break;
                 }
+
                 Scanner scP2 = new Scanner(System.in);
                 for (int i = 0; i < lesPatients.size(); i++) {
-                    System.out.println(
-                            (i + 1) + " - " + lesPatients.get(i).getNom() + " " + lesPatients.get(i).getPrenom());
+                    System.out.println((i + 1) + " - " +
+                            lesPatients.get(i).getNom() + " " +
+                            lesPatients.get(i).getPrenom());
                 }
+
                 int choice2 = scP2.nextInt();
                 Patient pt2 = lesPatients.get(choice2 - 1);
+
                 try {
                     ConnectionFactory factory2 = new ConnectionFactory();
                     factory2.setHost("localhost");
@@ -225,14 +231,51 @@ public class Main {
                     Channel channel = connection.createChannel();
 
                     channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
-                    channel.queueDeclare("task_queue_visualisation", true, false, false, null);
+                    String historiqueQueue = "historique_patient_" + pt2.getUuid();
 
-                    String queueName = channel.queueDeclare().getQueue();
-                    channel.queueBind("task_queue_visualisation", EXCHANGE_NAME, "");
+                    channel.queueDeclare(
+                            historiqueQueue,
+                            true,
+                            false,
+                            false,
+                            null);
+                    channel.queueBind(historiqueQueue, EXCHANGE_NAME, "");
 
-                    System.out.println("En attente de mesures du patient correspondant...");
+                    System.out.println("Lecture de l'historique du patient...");
 
-                    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+                    while (true) {
+                        GetResponse response = channel.basicGet(historiqueQueue, true);
+                        if (response == null) {
+                            break;
+                        }
+
+                        String message_recu = new String(response.getBody(), "UTF-8");
+                        Mesure mesure = gson.fromJson(message_recu, Mesure.class);
+
+                        if (mesure != null &&
+                                mesure.getPatient().getUuid().equals(pt2.getUuid())) {
+
+                            Date date = new Date();
+                            System.out.println("[" + date + "] " +
+                                    mesure.getPatient().getNom() + " " +
+                                    mesure.getPatient().getPrenom());
+
+                            for (Capteur cap : mesure.getSensors()) {
+                                System.out.println(
+                                        cap.getTypeCapteur() + " : " +
+                                                cap.getValue() + " " +
+                                                cap.getUnite());
+                            }
+                            System.out.println("---------");
+                        }
+                    }
+
+                    String liveQueue = channel.queueDeclare(
+                            "", false, true, true, null).getQueue();
+
+                    channel.queueBind(liveQueue, EXCHANGE_NAME, "");
+
+                    DeliverCallback liveCallback = (consumerTag, delivery) -> {
                         String message_recu = new String(delivery.getBody(), "UTF-8");
                         Mesure mesure = gson.fromJson(message_recu, Mesure.class);
 
@@ -240,27 +283,28 @@ public class Main {
                                 mesure.getPatient().getUuid().equals(pt2.getUuid())) {
 
                             Date date = new Date();
-                            System.out.println("[" + date + "] Donnees de sante recues (" + mesure.getPatient().getNom()
-                                    + " " + mesure.getPatient().getPrenom() + ") ===");
+                            System.out.println("[" + date + "] " +
+                                    mesure.getPatient().getNom() + " " +
+                                    mesure.getPatient().getPrenom());
 
                             for (Capteur cap : mesure.getSensors()) {
                                 System.out.println(
-                                        "Type de capteur : " + cap.getTypeCapteur() +
-                                                " | Valeur : " + cap.getValue() + " " + cap.getUnite() +
-                                                " | Message : " + cap.getMessage());
+                                        cap.getTypeCapteur() + " : " +
+                                                cap.getValue() + " " +
+                                                cap.getUnite());
                             }
-                            System.out.println("\n=========\n");
-                        } else if (mesure != null) {
-                            // Debug mesure?
+                            System.out.println("=========");
                         }
                     };
 
-                    channel.basicConsume(TASK_QUEUE_NAME_VISUALISATION, true, deliverCallback, consumerTag -> {});
+                    channel.basicConsume(liveQueue, true, liveCallback, consumerTag -> {
+                    });
 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
+
             case 3:
                 if (lesChambres.size() == 0) {
                     System.out.println(
@@ -462,20 +506,31 @@ public class Main {
                     Channel channel = connection.createChannel();
 
                     channel.exchangeDeclare(EXCHANGE_NAME_ALERT, "fanout");
-                    channel.queueDeclare("task_queue_alerte", true, false, false, null);
+                    String historiqueQueue = "historique_alertes";
+                    channel.queueDeclare(historiqueQueue, true, false, false, null);
+                    channel.queueBind(historiqueQueue, EXCHANGE_NAME_ALERT, "");
 
-                    String queueName = channel.queueDeclare().getQueue();
-                    channel.queueBind("task_queue_alerte", EXCHANGE_NAME_ALERT, "");
+                    System.out.println("Lecture de l'historique des alertes...");
+
+                    while (true) {
+                        GetResponse response = channel.basicGet(historiqueQueue, true);
+                        if (response == null) break;
+
+                        String message_recu = new String(response.getBody(), "UTF-8");
+                        System.out.println("[HISTORIQUE] " + message_recu);
+                    }
+
+                    String liveQueue = channel.queueDeclare("", false, true, true, null).getQueue();
+                    channel.queueBind(liveQueue, EXCHANGE_NAME_ALERT, "");
 
                     System.out.println("En attente d'alertes...");
 
-                    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+                    DeliverCallback liveCallback = (consumerTag, delivery) -> {
                         String message_recu = new String(delivery.getBody(), "UTF-8");
-
-                        System.out.println(message_recu);
+                        System.out.println("[LIVE] " + message_recu);
                     };
 
-                    channel.basicConsume(TASK_QUEUE_NAME_ALERTE, true, deliverCallback, consumerTag -> {});
+                    channel.basicConsume(liveQueue, true, liveCallback, consumerTag -> { });
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -551,38 +606,6 @@ public class Main {
                     }
                 }
                 break;
-            case 10:
-                System.out.println("Option 10 sélectionnée : Liste des patients enregistrés");
-                if (lesPatients.size() == 0) {
-                    System.out.println("Aucun patient enregistré.");
-                    break;
-                } else {
-                    System.out.println("Souhaitez vous pouvoir filtrer les patients par attribut? (oui/non)");
-                    Scanner scFilter = new Scanner(System.in);
-                    String reponseFilter = scFilter.nextLine();
-                    if (reponseFilter.equalsIgnoreCase("oui")) {
-                        System.out.println("Sélectionner un attribut pour filtrer les patients : ");
-                        for (int i = 0; i < lesAttributs.size(); i++) {
-                            System.out.println((i + 1) + " - " + lesAttributs.get(i).getNomAttribut());
-                        }
-                        int choiceAttributFilter = scFilter.nextInt();
-                        AttributePatient attributFilter = lesAttributs.get(choiceAttributFilter - 1);
-                        System.out.println("Patients avec l'attribut '" + attributFilter.getNomAttribut() + "' :");
-                        for (int i = 0; i < lesPatients.size(); i++) {
-                            Patient p = lesPatients.get(i);
-                            if (p.getAttribut().getNomAttribut().equals(attributFilter.getNomAttribut())) {
-                                System.out.println((i + 1) + " - Nom: " + p.getNom() + " | Prénom: " + p.getPrenom());
-                            }
-                        }
-                    } else {
-                        System.out.println("Liste de tous les patients enregistrés :");
-                        for (int i = 0; i < lesPatients.size(); i++) {
-                            Patient p = lesPatients.get(i);
-                            System.out.println((i + 1) + " - Nom: " + p.getNom() + " | Prénom: " + p.getPrenom());
-                        }
-                    }
-                }
-                break;
             case 11:
                 System.out.println(
                         "Option 11 sélectionnée : Appuie bouton d'urgence (Simuler une alerte déclenché par un patient)");
@@ -601,19 +624,25 @@ public class Main {
                         + " !!!\n";
                 messageAlerte += "Le patient a appuyé sur le bouton d'urgence.\n";
                 messageAlerte += "=============================================\n";
+
                 ConnectionFactory factoryAlerte = new ConnectionFactory();
                 factoryAlerte.setHost("localhost");
                 try (Connection connectionA = factoryAlerte.newConnection();
-                        Channel channelA = connectionA.createChannel()) {
+                    Channel channelA = connectionA.createChannel()) {
 
                     channelA.exchangeDeclare(EXCHANGE_NAME_ALERT, "fanout");
-                    channelA.basicPublish(
-                            EXCHANGE_NAME_ALERT,
-                            "",
-                            null,
-                            messageAlerte.getBytes("UTF-8"));
+
+                    // Queue persistante pour l'historique
+                    String historiqueQueue = "historique_alertes";
+                    channelA.queueDeclare(historiqueQueue, true, false, false, null);
+                    channelA.queueBind(historiqueQueue, EXCHANGE_NAME_ALERT, "");
+
+                    // Publier le message sur l'exchange (pour live)
+                    channelA.basicPublish(EXCHANGE_NAME_ALERT, "", null, messageAlerte.getBytes("UTF-8"));
+
                     System.out.println(
                             "Alerte d'urgence envoyée pour le patient " + pt6.getNom() + " " + pt6.getPrenom() + ".");
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -693,26 +722,28 @@ public class Main {
                     System.out.println("Entrer le numéro de la chambre à nettoyer : ");
                     int choiceC2 = scC2.nextInt();
                     Chambre chANettoyer = lesChambres.get(choiceC2 - 1);
-                    String messageEntretien = "Demande de nettoyage pour la chambre " + chANettoyer.getNumeroChambre()
-                            + ".\n";
+                    String messageEntretien = "Demande de nettoyage pour la chambre " + chANettoyer.getNumeroChambre() + ".\n";
+
                     ConnectionFactory factoryEntretien = new ConnectionFactory();
                     factoryEntretien.setHost("localhost");
                     try (Connection connectionE = factoryEntretien.newConnection();
-                            Channel channelE = connectionE.createChannel()) {
+                        Channel channelE = connectionE.createChannel()) {
 
                         channelE.exchangeDeclare(EXCHANGE_NAME_ENTRETIEN, "fanout");
-                        channelE.basicPublish(
-                                EXCHANGE_NAME_ENTRETIEN,
-                                "",
-                                null,
-                                messageEntretien.getBytes("UTF-8"));
-                        System.out.println(
-                                "Demande de nettoyage envoyée pour la chambre " + chANettoyer.getNumeroChambre() + ".");
+
+                        String historiqueQueue = "historique_entretien";
+                        channelE.queueDeclare(historiqueQueue, true, false, false, null);
+                        channelE.queueBind(historiqueQueue, EXCHANGE_NAME_ENTRETIEN, "");
+
+                        channelE.basicPublish(EXCHANGE_NAME_ENTRETIEN, "", null, messageEntretien.getBytes("UTF-8"));
+
+                        System.out.println("Demande de nettoyage envoyée pour la chambre " + chANettoyer.getNumeroChambre() + ".");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
                 break;
+
             case 16:
                 System.out.println("Option 16 sélectionnée : Monitoring de l'entretien");
                 try {
@@ -722,27 +753,41 @@ public class Main {
                     Channel channel = connection.createChannel();
 
                     channel.exchangeDeclare(EXCHANGE_NAME_ENTRETIEN, "fanout");
-                    channel.queueDeclare("task_queue_entretien", true, false, false, null);
+                    String historiqueQueue = "historique_entretien";
+                    channel.queueDeclare(historiqueQueue, true, false, false, null);
+                    channel.queueBind(historiqueQueue, EXCHANGE_NAME_ENTRETIEN, "");
 
-                    String queueName = channel.queueDeclare().getQueue();
-                    channel.queueBind("task_queue_entretien", EXCHANGE_NAME_ENTRETIEN, "");
+                    System.out.println("Lecture de l'historique des demandes de nettoyage...");
+
+                    while (true) {
+                        GetResponse response = channel.basicGet(historiqueQueue, true);
+                        if (response == null) break;
+
+                        String message_recu = new String(response.getBody(), "UTF-8");
+                        System.out.println("=== Historique ===");
+                        System.out.println(message_recu);
+                        System.out.println("=================");
+                    }
+
+                    String liveQueue = channel.queueDeclare("", false, true, true, null).getQueue();
+                    channel.queueBind(liveQueue, EXCHANGE_NAME_ENTRETIEN, "");
 
                     System.out.println("En attente des demandes de nettoyage...");
 
-                    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+                    DeliverCallback liveCallback = (consumerTag, delivery) -> {
                         String message_recu = new String(delivery.getBody(), "UTF-8");
-
                         System.out.println("=== Demande de nettoyage reçue ===");
                         System.out.println(message_recu);
                         System.out.println("===================================");
                     };
 
-                    channel.basicConsume(TASK_QUEUE_NAME_ENTRETIEN, true, deliverCallback, consumerTag -> {});
+                    channel.basicConsume(liveQueue, true, liveCallback, consumerTag -> { });
 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
+
             case 17:
                 System.out.println("Option 17 sélectionnée : Quitter");
                 System.out.println("Fermeture de l'application...");
@@ -750,10 +795,9 @@ public class Main {
                 break;
             case 18:
                 System.out.println(
-                    "Option 18 sélectionnée : Réception des messages du topic Webhooks, et envoi à ceux qui correspondent");
+                        "Option 18 sélectionnée : Réception des messages du topic Webhooks, et envoi à ceux qui correspondent");
 
                 final ArrayList<Webhook> lesWebhooksW = new ArrayList<>();
-
 
                 File fW2 = new File("Webhooks.json");
                 if (!fW2.exists() || fW2.isDirectory()) {
@@ -783,23 +827,23 @@ public class Main {
                     Connection connection = factoryW.newConnection();
                     Channel channel = connection.createChannel();
 
-                    channel.exchangeDeclare(EXCHANGE_NAME_WEBHOOK, "fanout");
-                    channel.queueDeclare("task_queue_webhook", true, false, false, null);
+                    channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
+                    String historiqueQueue = "historique_visualisation";
+                    channel.queueDeclare(historiqueQueue, true, false, false, null);
+                    channel.queueBind(historiqueQueue, EXCHANGE_NAME, "");
 
-                    String queueName = channel.queueDeclare().getQueue();
-                    channel.queueBind("task_queue_webhook", EXCHANGE_NAME_WEBHOOK, "");
-                    System.out.println("En attente de mesures pour les webhooks...");
+                    while (true) {
+                        GetResponse response = channel.basicGet(historiqueQueue, true);
+                        if (response == null) break;
 
-                    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-                        String message_recu = new String(delivery.getBody(), "UTF-8");
+                        String message_recu = new String(response.getBody(), "UTF-8");
                         Mesure mesure = gson.fromJson(message_recu, Mesure.class);
-
-                        if (mesure == null || mesure.getPatient() == null) return;
+                        if (mesure == null || mesure.getPatient() == null) continue;
 
                         for (Webhook wh : lesWebhooksW) {
                             if (wh.isAllPatients() ||
-                                (wh.getPatient() != null &&
-                                mesure.getPatient().getUuid().equals(wh.getPatient().getUuid()))) {
+                                    (wh.getPatient() != null &&
+                                            mesure.getPatient().getUuid().equals(wh.getPatient().getUuid()))) {
 
                                 try {
                                     URL url = new URL(wh.getUrl());
@@ -819,13 +863,49 @@ public class Main {
                                     lesWebhooksW.remove(wh);
                                     System.out.println("Erreur lors de l'envoi du webhook à " + wh.getUrl()
                                             + ". Webhook supprimé de la liste.");
-                                    //e.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+
+                    String liveQueue = channel.queueDeclare("", false, true, true, null).getQueue();
+                    channel.queueBind(liveQueue, EXCHANGE_NAME, "");
+                    System.out.println("En attente de mesures pour les webhooks...");
+
+                    DeliverCallback liveCallback = (consumerTag, delivery) -> {
+                        String message_recu = new String(delivery.getBody(), "UTF-8");
+                        Mesure mesure = gson.fromJson(message_recu, Mesure.class);
+                        if (mesure == null || mesure.getPatient() == null) return;
+
+                        for (Webhook wh : lesWebhooksW) {
+                            if (wh.isAllPatients() ||
+                                    (wh.getPatient() != null &&
+                                            mesure.getPatient().getUuid().equals(wh.getPatient().getUuid()))) {
+
+                                try {
+                                    URL url = new URL(wh.getUrl());
+                                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                                    conn.setRequestMethod("POST");
+                                    conn.setRequestProperty("Content-Type", "application/json; utf-8");
+                                    conn.setDoOutput(true);
+
+                                    try (OutputStream os = conn.getOutputStream()) {
+                                        os.write(message_recu.getBytes("UTF-8"));
+                                    }
+
+                                    System.out.println("Webhook envoyé à " + wh.getUrl()
+                                            + " | Réponse: " + conn.getResponseCode());
+
+                                } catch (Exception e) {
+                                    lesWebhooksW.remove(wh);
+                                    System.out.println("Erreur lors de l'envoi du webhook à " + wh.getUrl()
+                                            + ". Webhook supprimé de la liste.");
                                 }
                             }
                         }
                     };
 
-                    channel.basicConsume(TASK_QUEUE_NAME_WEBHOOK, true, deliverCallback, consumerTag -> {});
+                    channel.basicConsume(liveQueue, true, liveCallback, consumerTag -> { });
 
                 } catch (Exception e) {
                     e.printStackTrace();
